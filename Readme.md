@@ -16,6 +16,7 @@ A Chrome extension that uses AI to help find answers to multiple-choice question
 - 🚀 **Multiple AI Providers** - Falls back to different free APIs for reliability
 - 🔑 **Optional Groq API** - Add your own Groq API key for faster, more reliable results
 
+
 ## 📸 Screenshots
 
 ### 🔹 Extension Popup
@@ -23,8 +24,9 @@ A Chrome extension that uses AI to help find answers to multiple-choice question
 *Simple, clean interface with two main functions*
 
 ### 🔹 Answer Modal
-![Answer Model](screenshots/showBoxanswer.png)  
+![Answer Modal](screenshots/showBoxanswer.png)  
 *Beautiful answer display with all questions and correct options*
+
 
 
 ## 🚀 Installation
