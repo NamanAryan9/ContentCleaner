@@ -17,11 +17,14 @@ A Chrome extension that uses AI to help find answers to multiple-choice question
 
 ## 📸 Screenshots
 
-![Extension Popup](screenshots/popup.png)
+### 🔹 Extension Popup
+![Extension Popup](screenshots/popup.png)  
 *Simple, clean interface with two main functions*
 
-![Answer Modal](screenshots/showBoxanswer.png)
+### 🔹 Answer Modal
+![Answer Modal](screenshots/showBoxanswer.png)  
 *Beautiful answer display with all questions and correct options*
+
 
 ## 🚀 Installation
 
