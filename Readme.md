@@ -4,8 +4,9 @@ A Chrome extension that uses AI to help find answers to multiple-choice question
 
 ![Extension Demo](https://img.shields.io/badge/version-2.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Extension Popup](aifinder.png)
-)
+![AI Finder](screenshots/aifinder.png)
+
+
 ## ✨ Features
 
 - 🔍 **Automatic Question Detection** - Scans pages for multiple-choice questions
@@ -22,7 +23,7 @@ A Chrome extension that uses AI to help find answers to multiple-choice question
 *Simple, clean interface with two main functions*
 
 ### 🔹 Answer Modal
-![Answer Modal](screenshots/showBoxanswer.png)  
+![Answer Model](screenshots/showBoxanswer.png)  
 *Beautiful answer display with all questions and correct options*
 
 
