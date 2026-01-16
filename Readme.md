@@ -166,8 +166,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact
 
-- **GitHub Issues**: [Report a bug](https://github.com//coursera-ai-answer-finder/issues)
-- **Email**: namanaryan002@gmail.com
+- 🐞 **GitHub Issues**  
+  https://github.com/NamanAryan9/ContentCleaner/issues
+
+- 💻 **GitHub Profile**  
+  https://github.com/NamanAryan9
+
 
 ---
 
