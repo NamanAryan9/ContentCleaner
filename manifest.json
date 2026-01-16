@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Content Integrity Cleaner",
+  "version": "2.0",
+  "description": "Cleans page and shows AI-suggested answers",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://api.groq.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

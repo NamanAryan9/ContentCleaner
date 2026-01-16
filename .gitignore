@@ -1,0 +1,30 @@
+# API Keys - NEVER commit these!
+config.js
+*_api_key*.js
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node modules (if you add any)
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.log
+
+# Chrome Extension
+*.pem
+*.crx
+*.zip
