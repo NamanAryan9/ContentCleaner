@@ -79,10 +79,12 @@ async function getQuestions() {
 async function askAI(questions) {
   const numQuestions = questions.length;
   
-  const prompt = questions.map(
-    (q, i) =>
-      `Question ${i + 1}: ${q.question}\nOptions:\n${q.options.map((opt, idx) => `${idx + 1}. ${opt}`).join("\n")}`
-  ).join("\n\n");
+  const prompt = questions.map((q, i) => {
+    const typeHint = q.isMultipleChoice 
+      ? ' [SELECT ALL TRUE STATEMENTS - MULTIPLE ANSWERS REQUIRED]' 
+      : ' [SINGLE CORRECT ANSWER]';
+    return `Question ${i + 1}${typeHint}: ${q.question}\nOptions:\n${q.options.map((opt, idx) => `${idx + 1}. ${opt}`).join("\n")}`;
+  }).join("\n\n");
 
   console.log("Sending to AI:", prompt);
 
@@ -105,12 +107,27 @@ async function askAI(questions) {
             messages: [
               { 
                 role: "system", 
-                content: `You are answering exactly ${numQuestions} multiple choice questions. Respond with ONLY the answers in format QuestionNumber:OptionNumber, one per line. Example: 1:2 means Question 1, Option 2. Do NOT add any extra text or questions beyond the ${numQuestions} provided.` 
+                content: `You are a precise quiz answering system for ${numQuestions} questions.
+
+CRITICAL RULES:
+1. For [SINGLE CORRECT ANSWER] questions: Return ONE option number
+2. For [SELECT ALL TRUE STATEMENTS] questions: Return ALL correct option numbers separated by commas
+3. Think carefully - "select all true facts" means MULTIPLE answers are expected
+
+Response Format:
+- Single answer: 1:2
+- Multiple answers: 2:1,3,4 (all correct options)
+
+Example:
+Question 1 [SELECT ALL]: Which are prime? 2,3,4,5
+Correct response: 1:1,2,4 (options 1,2,4 are prime: 2,3,5)
+
+BE THOROUGH - Don't miss any correct answers for "select all" questions!` 
               },
               { role: "user", content: prompt }
             ],
             temperature: 0.1,
-            max_tokens: 200
+            max_tokens: 400
           })
         });
         
@@ -138,12 +155,12 @@ async function askAI(questions) {
             messages: [
               { 
                 role: "system", 
-                content: `Answer exactly ${numQuestions} MCQs. Format: QuestionNumber:OptionNumber. Do NOT make up extra questions.` 
+                content: `Answer ${numQuestions} questions. [SELECT ALL] means multiple answers! Format: 1:2 or 1:2,3,4` 
               },
               { role: "user", content: prompt }
             ],
             temperature: 0.1,
-            max_tokens: 200
+            max_tokens: 400
           })
         });
         
@@ -160,9 +177,9 @@ async function askAI(questions) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            inputs: `Answer EXACTLY ${numQuestions} multiple choice questions. Format: QuestionNumber:OptionNumber (e.g., 1:2). Do NOT make up extra questions.\n\n${prompt}\n\nAnswers (${numQuestions} only):`,
+            inputs: `Answer ${numQuestions} MCQs. [SELECT ALL] = multiple answers required! Format: 1:2 or 1:2,3,4 for multiple.\n\n${prompt}\n\nAnswers:`,
             parameters: {
-              max_new_tokens: 200,
+              max_new_tokens: 400,
               temperature: 0.1,
               return_full_text: false
             },
@@ -226,20 +243,28 @@ function parseAnswers(text, maxQuestions) {
   const answers = [];
   
   for (const line of lines) {
-    // Match patterns like "1:2" or "1: 2" or "Question 1: Option 2"
-    const match = line.match(/(\d+)\s*[:.\-]\s*(\d+)/);
+    // Match patterns like "1:2" or "1:2,3,4" (multiple answers)
+    const match = line.match(/(\d+)\s*[:.\-]\s*([\d,\s]+)/);
     if (match) {
       const qNum = Number(match[1]);
-      const optNum = Number(match[2]);
+      const optionsStr = match[2];
+      
+      // Parse multiple options (comma-separated)
+      const optionNumbers = optionsStr
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(Number)
+        .filter(n => !isNaN(n));
       
       // Only accept answers for questions that actually exist
-      if (qNum >= 1 && qNum <= maxQuestions) {
+      if (qNum >= 1 && qNum <= maxQuestions && optionNumbers.length > 0) {
         answers.push({
           qIndex: qNum - 1,  // Convert to 0-based index
-          answerIndex: optNum  // Keep as 1-based for highlighting
+          answerIndices: optionNumbers  // Array of all correct options
         });
       } else {
-        console.warn(`Ignoring answer for question ${qNum} (only ${maxQuestions} questions exist)`);
+        console.warn(`Ignoring answer for question ${qNum}`);
       }
     }
   }
@@ -270,18 +295,21 @@ async function highlightAnswers(answers, questions) {
 
   // Also try to highlight on the page (if possible)
   for (const ans of answers) {
-    await new Promise((resolve) => {
-      chrome.tabs.sendMessage(tab.id, {
-        action: "HIGHLIGHT",
-        qIndex: ans.qIndex,
-        answerIndex: ans.answerIndex
-      }, () => {
-        if (chrome.runtime.lastError) {
-          console.error("Highlight error:", chrome.runtime.lastError);
-        }
-        resolve();
+    // Highlight each correct answer
+    for (const answerIdx of ans.answerIndices) {
+      await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "HIGHLIGHT",
+          qIndex: ans.qIndex,
+          answerIndex: answerIdx
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.error("Highlight error:", chrome.runtime.lastError);
+          }
+          resolve();
+        });
       });
-    });
+    }
   }
 }
 
@@ -303,8 +331,12 @@ document.getElementById("aiBtn").addEventListener("click", async () => {
       return;
     }
 
-    console.log(`Found ${questions.length} questions on page`);
+    // Count multiple-choice questions
+    const multipleCount = questions.filter(q => q.isMultipleChoice).length;
+    
+    console.log(`Found ${questions.length} questions on page (${multipleCount} multiple-choice)`);
     statusDiv.textContent = `🤖 Asking AI about ${questions.length} question(s)...`;
+    
     const aiText = await askAI(questions);
 
     console.log("AI raw response:", aiText);
@@ -318,10 +350,15 @@ document.getElementById("aiBtn").addEventListener("click", async () => {
       return;
     }
 
-    statusDiv.textContent = `✨ Highlighting ${answers.length} answer(s)...`;
+    statusDiv.textContent = `✨ Displaying ${answers.length} answer(s)...`;
     await highlightAnswers(answers, questions);
 
-    statusDiv.textContent = `✅ Highlighted ${answers.length} answer(s)!`;
+    // Show warning if multiple-choice questions exist
+    if (multipleCount > 0) {
+      statusDiv.textContent = `✅ Shown! ⚠️ Free AI may miss some answers in multi-choice questions. Add Groq API key for better accuracy.`;
+    } else {
+      statusDiv.textContent = `✅ Highlighted ${answers.length} answer(s)!`;
+    }
     statusDiv.className = 'success';
     btn.disabled = false;
     
